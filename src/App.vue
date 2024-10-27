@@ -1,13 +1,11 @@
 <template>
   <div class="desk">
-    <div class="note" 
-      v-for="note in notes" :key="note.id"
-      :style="{ background: note.color, left: note.x + 'px', top: note.y + 'px' }" 
-      @mousedown="startDrag($event, note)"
-    >
+    <div class="note" v-for="note in notes" :key="note.id"
+      :style="{ background: note.color, left: note.x + 'px', top: note.y + 'px' }" @mousedown="startDrag($event, note)">
       <div class="menu" v-if="note.menu">
-        <btn class="button btn-pin" @click="pinNote(note)"><img src="../../public/pin-icon.svg" alt="pin"></btn>
-        <btn class="button btn-delete" @click="deleteNote(note.id)"><img src="../../public/delete-icon.svg" alt="delete"></btn>
+        <button class="button btn-pin" @click="pinNote(note)"><img src="../public/pin-icon.svg" alt="pin"></button>
+        <button class="button btn-delete" @click="deleteNote(note.id)"><img src="../public/delete-icon.svg"
+            alt="delete"></button>
       </div>
       <div class="pin" v-if="note.pin"></div>
       <textarea class="text" v-model="note.text" @click="note.menu = !note.menu"></textarea>
@@ -20,59 +18,63 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      notes: [],
-      draggingNote: null,
-      offsetX: 0,
-      offsetY: 0,
-    }
-  },
-  methods: {
-    createNote(color) {
-      this.notes.push({ id: this.notes.length + 1, color: color, text: 'dsad', pin: false, menu: false, x: 100, y: 50 })
-    },
-    deleteNote(id) {
-      this.notes.splice(id - 1, 1);
-    },
-    pinNote(note){
-      note.pin = !note.pin
-      note.menu = !note.menu
-      console.log(notes[id].pin, notes[id].menu);
-      
-    },
-    startDrag(event, note) {
-      this.draggingNote = note;
-      if(!note.pin){
-        const rect = event.target.getBoundingClientRect();
-        this.offsetX = event.clientX - rect.left;
-        this.offsetY = event.clientY - rect.top;
-        document.addEventListener('mousemove', this.onMouseMove);
-        document.addEventListener('mouseup', this.stopDrag);
-      }
-      console.log(note);
-      
-    },
-    onMouseMove(event) {
-      if (!this.draggingNote) return;
-      this.draggingNote.x = event.clientX - this.offsetX;
-      this.draggingNote.y = event.clientY - this.offsetY;
-    },
-    stopDrag() {
-      this.draggingNote = null;
-      document.removeEventListener('mousemove', this.onMouseMove);
-      document.removeEventListener('mouseup', this.stopDrag);
-    },
-    unpin(){
-      this.draggingNote = null
-      document.removeEventListener('mousemove', this.onMouseMove);
-      document.removeEventListener('mouseup', this.stopDrag);
-      
-    }
-  },
+<script setup>
+import { ref, watch, onMounted } from 'vue';
+
+const notes = ref([]);
+let draggingNote = ref(null);
+let offsetX = ref(0);
+let offsetY = ref(0);
+
+function createNote(color) {
+  notes.value.push({
+    id: notes.value.length + 1,
+    color: color,
+    text: '',
+    pin: false,
+    menu: false,
+    x: 100,
+    y: 50
+  });
 }
+watch(notes, newValue => {
+  localStorage.setItem('notes', JSON.stringify(newValue))
+}, { deep: true })
+
+function deleteNote(id) {
+  notes.value = notes.value.filter(item => item.id !== id)
+}
+
+function pinNote(note) {
+  note.pin = !note.pin
+  note.menu = !note.menu
+}
+
+function startDrag(event, note) {
+  draggingNote.value = note
+  if (!note.pin) {
+    const rect = event.target.getBoundingClientRect()
+    offsetX.value = event.clientX - rect.left
+    offsetY.value = event.clientY - rect.top
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', stopDrag)
+  }
+}
+
+function onMouseMove(event) {
+  if (!draggingNote.value) return;
+  draggingNote.value.x = event.clientX - offsetX.value;
+  draggingNote.value.y = event.clientY - offsetY.value;
+}
+
+function stopDrag() {
+  draggingNote.value = null;
+  document.removeEventListener('mousemove', onMouseMove);
+  document.removeEventListener('mouseup', stopDrag);
+}
+onMounted(() => {
+  notes.value = JSON.parse(localStorage.getItem('notes')) || []
+})
 </script>
 
 <style>
@@ -125,11 +127,9 @@ export default {
   top: -40px;
   left: 90px;
   z-index: 1;
-  padding-top: 5px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
   width: 70px;
   height: 35px;
   border-radius: 6px;
@@ -138,6 +138,7 @@ export default {
 
 button {
   border: none;
+  background: none;
 }
 
 .text:focus {
